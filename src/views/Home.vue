@@ -1,10 +1,7 @@
 <template>
   <div>
-    <v-row class="ma-0 pa-0" style="height: 65vh">
-      <v-col
-        class="mr-2 d-flex align-center justify-center"
-        style="background-color: pink"
-      >
+    <v-row style="height: 65vh" v-if="loaded">
+      <v-col>
         <image-view
           :src="selectedImage.url"
           :height="100"
@@ -14,7 +11,11 @@
       </v-col>
     </v-row>
 
-    <gallery-slider :photos="photos" @select-image="selectImage" />
+    <gallery-slider
+      v-if="loaded"
+      :photos="photos"
+      @select-image="selectImage"
+    />
   </div>
 </template>
 
@@ -22,62 +23,45 @@
 import GallerySlider from "@/components/GallerySlider.vue";
 import ImageView from "@/components/ImageView.vue";
 import { Component, Vue } from "vue-property-decorator";
+import PhotosService from "@/services/photos.service";
+import { image } from "@/utils/types/image.type";
 
 @Component({ components: { GallerySlider, ImageView } })
 export default class Home extends Vue {
   data() {
     return {
-      selectedImageIndex: 0,
-      photos: [
-        {
-          id: "1",
-          author: "amit",
-          width: 50,
-          height: 30,
-          url: "https://picsum.photos/id/11/500/300",
-          download_url: "http",
-        },
-        {
-          id: "2",
-          author: "amiti",
-          width: 50,
-          height: 30,
-          url: "https://cdn.vuetifyjs.com/images/parallax/material.jpg",
-          download_url: "http",
-        },
-        {
-          id: "3",
-          author: "amitush",
-          width: 50,
-          height: 30,
-          url: "https://picsum.photos/id/11/500/300",
-          download_url: "http",
-        },
-        {
-          id: "4",
-          author: "amitpush",
-          width: 50,
-          height: 30,
-          url: "https://cdn.vuetifyjs.com/images/parallax/material.jpg",
-          download_url: "http",
-        },
-        {
-          id: "5",
-          author: "amitpia",
-          width: 50,
-          height: 30,
-          url: "https://picsum.photos/id/11/500/300",
-          download_url: "http",
-        },
-      ],
+      selectedImageId: 1,
+      photos: [],
+      // in seconds
+      refreshTime: 30,
     };
   }
-  selectImage(index: number): void {
-    this.$data.selectedImageIndex = index;
-    console.log("selected");
+
+  mounted(): void {
+    this.initNewPhotos();
+    // Fetch for new photos after the refresh time
+    setInterval(() => {
+      this.initNewPhotos();
+    }, this.$data.refreshTime * 1000);
   }
-  get selectedImage(): any {
-    return this.$data.photos[this.$data.selectedImageIndex];
+
+  async initNewPhotos(): Promise<void> {
+    this.$data.photos = await PhotosService.getPhotos();
+    this.$data.selectedImageId = this.$data.photos[0].id;
+  }
+
+  selectImage(imageId: number): void {
+    this.$data.selectedImageId = imageId;
+  }
+
+  get selectedImage(): image {
+    return this.$data.photos.find(
+      (image: image) => image.id === this.$data.selectedImageId
+    );
+  }
+
+  get loaded(): boolean {
+    return this.$data.photos.length > 0;
   }
 }
 </script>
